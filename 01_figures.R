@@ -8,13 +8,13 @@
 #### Load packages ####
 pacman::p_load(tidyverse, data.table, sf, spdep, brazilmaps, geosphere,
                geobr, sfheaders)
-source("functions.R")
+source("centroid_function.R")
 
 
 
 #### Read in data ####
 ## Data extraction ##
-df <- fread("data/clean_data_update.csv")
+df <- fread("data/full_data.csv")
 
 
 ## Countries studied ##
@@ -47,7 +47,7 @@ df$Model_plot <- factor(df$Model_plot,
 
 ## Histogram
 model_class <- ggplot(data = df) +
-  geom_histogram(aes(x = Year, fill = Model_plot), colour = "black",
+  geom_histogram(aes(x = Year_of_publication, fill = Model_plot), colour = "black",
                  binwidth = 1) +
   scale_fill_manual(values = model_class_col, name = "Type of model") +
   theme_light() +
@@ -94,7 +94,7 @@ st_crs(capitals) <- st_crs(shp_ill)
 
 
 ## Read in air travel info ##
-gravity_se <- fread("data/air_travel_se.csv")
+gravity_se <- fread("data/air_travel_br.csv")
 
 
 ## Map of Southeast Brazil (with centroid and capitals)
@@ -249,44 +249,16 @@ ggsave(heat_gravity, filename = "output/heat_gravity.png",
 
 
 #### Figure 4: Connectivity assumptions by mosquito species ####
-## Create mosquito species variable based on disease
-df$mosquito <- ifelse(df$Disease_std %in% c("Chikungunya",
-                                            "Chikungunya and dengue",
-                                            "Chikungunya and Zika",
-                                            "Dengue", 
-                                            "Dengue, chikungunya and Zika",
-                                            "Yellow fever", "Zika", 
-                                            "Zika and dengue"), "Aedes",
-                      ifelse(df$Disease_std %in% c("Japanese Encephalitis",
-                                                    "West Nile virus",
-                                                    "Rift Valley Fever"),
-                             "Culex", 
-                             ifelse(df$Disease_std == "Malaria", "Anopheles", 
-                                    "Error")))
-
-
-## Create Assumption_results which groups distance, neighbour and shared characteristics togehter
-df$Assumption_results <- ifelse(df$Assumption_plot %in% c("Distance", 
-                                                          "Neighbours connected", 
-                                                          "Shared characteristics") |
-                                  df$Mixed_assumption %in% c("Distance and neighbours connected", 
-                                                              "Neighbours connected, distance",
-                                                              "Shared characteristics and distance",
-                                                              "Shared characteristics and neighbours connected"),
-                                "Distance-based", df$Assumption_plot)
-
-
-
 ## Save percentage of studies per species using each assumption 
-species_ass_df <- group_by(df, mosquito, Assumption_results) %>%
+species_ass_df <- group_by(df, Mosquito_species, Assumption_plot) %>%
   summarise(count = n()) %>%
   mutate(perc = count/sum(count)*100,
-         Assumption_results = ifelse(Assumption_results == "", "Not given",
-                                     Assumption_results))
+         Assumption_results = ifelse(Assumption_plot == "", "Not given",
+                                     Assumption_plot))
 
 
 mosquito_ass_plot <- ggplot(data = species_ass_df) +
-  geom_bar(aes(x = mosquito, y = perc, fill = Assumption_results),
+  geom_bar(aes(x = Mosquito_species, y = perc, fill = Assumption_results),
            stat = "Identity", colour = "black") +
   scale_x_discrete(name = "Mosquito species",
                    labels = c("Aedes \n(n = 117)", "Anopheles \n(n = 118)",
@@ -311,7 +283,7 @@ ggsave(mosquito_ass_plot, filename = "output/mosquito_ass.png")
 
 #### Figure 5: Connectivity assumption by model type ####
 assumption_by_model <- ggplot(data = df) +
-  geom_bar(aes(x = Assumption_results, fill = Model_plot), 
+  geom_bar(aes(x = Assumption_plot, fill = Model_plot), 
            colour = "black") +
   scale_fill_manual(values = model_class_col, name = "Type of model") +
   scale_x_discrete(labels = c("Distance-based",
@@ -366,7 +338,7 @@ ggsave(map_plot, filename = "output/map_studies.png", width = 10, height = 4)
 
 #### Figure S2: Number of spatial modelling studies published per year by mosquito-borne disease ####
 disease_timeplot <- ggplot(data = df) +
-  geom_histogram(aes(x = Year, fill = Disease_std), colour = "black", 
+  geom_histogram(aes(x = Year_of_publication, fill = Disease_plot), colour = "black", 
                  binwidth = 1) +
   scale_fill_viridis_d(name = "Disease", option = "C") +
   theme_light() +
