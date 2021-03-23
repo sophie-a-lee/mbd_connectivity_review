@@ -21,34 +21,6 @@ df <- fread("data/clean_data_update.csv")
 countries <- fread("data/countries_full.csv", fill = T)
 
 
-## States SP, RJ, ES + MG ##
-shp_state <- read_state() 
-
-shp_ill <- shp_state %>%
-  filter(abbrev_state %in% c("SP", "RJ", "ES", "MG")) %>%
-  # Obtain coordinates of centroid
-  mutate(lon = map_dbl(geom, ~st_centroid_within_poly(.x)[[1]]),
-         lat = map_dbl(geom, ~st_centroid_within_poly(.x)[[2]])) %>%
-  st_as_sf()
-
-
-## Add capital cities ##
-capitals <- data.table(name = c("São Paulo", "Rio de Janeiro", "Vitória", 
-                                "Belo Horizonte"),
-                       abbrev_state = c("SP", "RJ", "ES", "MG"),
-                       lat = c(-23.5505, -22.9068, -20.2976, -19.9167),
-                       lon = c(-46.6333, -43.1729, -40.2958, -43.9345),
-                       lat1 = c(-23.5505, -22.9068, -20.2976, -19.9167),
-                       lon1 = c(-46.6333, -43.1729, -40.2958, -43.9345))
-coordinates(capitals) <- ~lat+lon
-capitals <- st_as_sf(capitals)
-st_crs(capitals) <- st_crs(shp_ill)
-
-
-## Air travel info ##
-gravity_se <- fread("data/air_travel_se.csv")
-
-
 
 #### Figure 2: Number of spatial modelling studies published per year by model type ####
 ## Add 'mixed' category
@@ -58,7 +30,7 @@ df[grep(" and ", df$Spatial_model_class), ]$Model_plot <- "Mixed"
 
 ## Create colour palette
 model_class_col <- c("Fixed effect" = "#779FA1",
-                     "Random effect" = "#9E606F",
+                     "Mixed effect" = "#9E606F",
                      "Machine learning" = "#FFD166",
                      "Compartmental" = "#073B4C",
                      "Mixed" = "#06d6a0",
@@ -68,7 +40,7 @@ model_class_col <- c("Fixed effect" = "#779FA1",
 
 ## Re-order model type for plot 
 df$Model_plot <- factor(df$Model_plot,
-                        levels = c("Fixed effect", "Random effect",
+                        levels = c("Fixed effect", "Mixed effect",
                                    "Machine learning", "Compartmental",
                                    "Mixed", "Other"))
 
@@ -92,20 +64,50 @@ ggsave(model_class, filename = "output/model_class.png",
 
 
 
-#### Figure 3:Comparison of spatial connectivity using different data sources and assumptions ####
+#### Figure 3: Comparison of spatial connectivity using different data sources and assumptions ####
+## Read state-level shapefile
+shp_state <- read_state() 
+
+## Only keep southern states
+shp_ill <- shp_state %>%
+  filter(abbrev_state %in% c("SP", "RJ", "ES", "MG")) %>%
+  # Obtain coordinates of centroid
+  mutate(lon = map_dbl(geom, ~st_centroid_within_poly(.x)[[1]]),
+         lat = map_dbl(geom, ~st_centroid_within_poly(.x)[[2]])) %>%
+  st_as_sf()
+
+
+## Add capital cities 
+capitals <- data.table(name = c("São Paulo", "Rio de Janeiro", "Vitória", 
+                                "Belo Horizonte"),
+                       abbrev_state = c("SP", "RJ", "ES", "MG"),
+                       lat = c(-23.5505, -22.9068, -20.2976, -19.9167),
+                       lon = c(-46.6333, -43.1729, -40.2958, -43.9345),
+                       lat1 = c(-23.5505, -22.9068, -20.2976, -19.9167),
+                       lon1 = c(-46.6333, -43.1729, -40.2958, -43.9345))
+
+## Convert to an sf object to combine with the map
+coordinates(capitals) <- ~lat+lon
+capitals <- st_as_sf(capitals)
+# Match CRS to combine
+st_crs(capitals) <- st_crs(shp_ill)
+
+
+## Read in air travel info ##
+gravity_se <- fread("data/air_travel_se.csv")
+
+
 ## Map of Southeast Brazil (with centroid and capitals)
 southeast_map <- ggplot() +
-  #geom_sf(data = shp_state, fill = "white", col = "lightgrey") +
   geom_sf(data = shp_ill, col = "black", fill = "white") +
   geom_point(data = shp_ill, aes(x = lon, y = lat), shape = "x", size = 5) +
   geom_point(data = capitals, aes(x = lon1, y = lat1), size = 2) +
-  #geom_text(data = capitals, aes(label = name, x = lon1, y = lat1)) +
-  # scale_fill_brewer(name = "State", palette = "Pastel1") +
   coord_sf(xlim = c(-53, -39), ylim = c(-25, -14)) +
   theme_void()
 
 
 ggsave(southeast_map, filename = "output/southeastmap.png")
+
 
 ## Figure 3A: Neighbourhood-based
 # Create matrix of connectivity weights
@@ -144,7 +146,9 @@ df_dist <- mutate(shp_ill,
 
 df_dist <- df_dist %>% 
   full_join(st_drop_geometry(df_dist), by = "k") %>%
+  # Calculate distance between centroid (/1000 to convert m to km)
   mutate(distkm = distGeo(cbind(lon.x, lat.x), cbind(lon.y, lat.y))/1000,
+         #  Remove distance from themselves, apply weighting function
          decay_dist = ifelse(abbrev_state.x == abbrev_state.y, NA,
                              exp(-distkm/1000)),
          id = paste(abbrev_state.x, abbrev_state.y),
