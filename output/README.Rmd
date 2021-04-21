@@ -1,0 +1,3 @@
+# Output folder
+
+A folder to save figures and tables.
