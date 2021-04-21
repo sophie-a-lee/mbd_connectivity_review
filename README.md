@@ -17,9 +17,9 @@ This systematic review synthesises the spatial methods used to model mosquito-bo
 
 A description of each file and folder is provided below:
 
-  **01_Figures.R:** `R` script used to create Figures from the manuscript and supplementary materials.
+  **Figures.R:** `R` script used to create Figures from the manuscript and supplementary materials.
 
-  **01_Supp_Table.R:** `R` script to create Supplementary table 1.
+  **Supp_Table.R:** `R` script to create Supplementary table 1.
 
   **centroid_function.R:** `R` script to obtain the coordinates of a polygon centroid, sourced in **01_Figures.R**.
   
