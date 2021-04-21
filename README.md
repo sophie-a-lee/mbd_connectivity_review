@@ -5,7 +5,9 @@ Data and `R` code to support Lee *et al.*, (2021). Spatial connectivity in mosqu
 
 To cite this repo:
 
-TBC
+Sophie A Lee. (2021, April 21). Data and R code to accompany 'Spatial connectivity in mosquito-borne disease models: a systematic review of methods and assumptions' (version v1.0.0). (Version V1.0.0). Zenodo. http://doi.org/10.5281/zenodo.4706866
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4706866.svg)](https://doi.org/10.5281/zenodo.4706866)
 
 --------------------------------------------------------------------------------
 
