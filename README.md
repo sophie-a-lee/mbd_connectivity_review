@@ -1,7 +1,6 @@
 # mbd_connectivity_review
 
-Data and `R` code to support Lee *et al.*, (2021). Spatial connectivity in mosquito-borne disease models: a systematic review of methods and assumptions
-(under review). 
+Data and `R` code to support Lee *et al.*, (2021). Spatial connectivity in mosquito-borne disease models: a systematic review of methods and assumptions. *J. R. Soc. Interface.* (https://doi.org/10.1098/rsif.2021.0096). 
 
 To cite this repo:
 
